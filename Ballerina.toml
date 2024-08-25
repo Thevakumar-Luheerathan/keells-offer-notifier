@@ -1,0 +1,8 @@
+[package]
+org = "mr_comali"
+name = "keels_offer_notifier"
+version = "0.1.0"
+distribution = "2201.9.2-20240708-193600-7df6361a"
+
+[build-options]
+observabilityIncluded = true
