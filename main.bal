@@ -1,8 +1,5 @@
 import ballerina/http;
 
-configurable string[] itemsToCheckForOffer = ?;
-configurable ItemsToCheckForPrice[] itemsToCheckForPrice = ?;
-
 final http:Client keelsEP = check new ("https://zebraliveback.keellssuper.com");
 
 public function main() returns error? {
@@ -16,113 +13,90 @@ public function main() returns error? {
         return;
     }
     string content = "";
+    string itemsWithExpPriceHtml = "";
+    string itemsWithOfferHtml = "";
+
     if itemsWithOffer.length() > 0 {
-        content = content + "Items with offer\n--------------------------------------\n" + 
-        getOutputItemString(itemsWithOffer) + "\n";
+        itemsWithOfferHtml =string `<h2>Items with Offer</h2>
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Item Name</th>
+                                                        <th>Original Price</th>
+                                                        <th>Discount Price</th>
+                                                        <th>Discount Percentage</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>${getOutputItemHtml(itemsWithOffer)}
+                                                </tbody>
+                                            </table>` ;
+
     }
     if itemsWithExpectedPrice.length() > 0 {
-        content = content + "Items with expected price\n--------------------------------------\n " + 
-        getOutputItemString(itemsWithExpectedPrice) + "\n";
+                itemsWithExpPriceHtml =string `<h2>Items with Offer</h2>
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Item Name</th>
+                                                        <th>Original Price</th>
+                                                        <th>Discount Price</th>
+                                                        <th>Discount Percentage</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>${getOutputItemHtml(itemsWithExpectedPrice)}
+                                                </tbody>
+                                            </table>` ;
     }
+    content = string `<!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Product Offers and Expected Prices</title>
+                            <style>
+                                body {
+                                    font-family: Arial, sans-serif;
+                                    margin: 0;
+                                    padding: 0;
+                                    background-color: #f5f5f5;
+                                }
+                                .container {
+                                    width: 100%;
+                                    max-width: 600px;
+                                    margin: 20px auto;
+                                    background-color: #ffffff;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                                    padding: 20px;
+                                }
+                                h2 {
+                                    color: #333;
+                                }
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-bottom: 20px;
+                                }
+                                th, td {
+                                    text-align: left;
+                                    padding: 10px;
+                                    border-bottom: 1px solid #ddd;
+                                }
+                                th {
+                                    background-color: #4CAF50;
+                                    color: white;
+                                }
+                                .discount {
+                                    color: #e74c3c;
+                                }
+                                .expected {
+                                    color: #2980b9;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">${itemsWithOfferHtml}${itemsWithExpPriceHtml}</div>
+                        </body>
+                        </html>`;
     check sendEmail(content);
-}
-
-function getOutputItemString(OutputItem[] outputItems) returns string {
-    string outputString = "";
-    foreach OutputItem outItem in outputItems {
-        string originalPrice = outItem.originalPrice.toString();
-        string discountPrice = outItem.discountPrice.toString();
-        string discountPercentage = outItem.discountPercentage.toString();
-        string itemString = string `outItem.name.toUpperAscii()${"\n"}
-        Original Price: ${originalPrice}${"\n"}Discount Price: ${discountPrice}
-        ${"\n"}Discount Percentage: ${discountPercentage}${"\n"}${"\n"}`;
-        outputString = outputString + itemString;
-    }
-    return outputString;
-}
-
-isolated function checkItemsWithOffer(string cookieHeader, string userSesseionId) returns OutputItem[]|error {
-    OutputItem[] outputItems = [];
-    foreach string item in itemsToCheckForOffer {
-        ItemsResponse itemsRes = check getItemDetails(userSesseionId, cookieHeader, item);
-        foreach ItemDetailsList itemDetail in itemsRes.result.itemDetailsList {
-            if itemDetail.isPromotionApplied {
-                decimal discountPrice = itemDetail.amount - itemDetail.promotionDiscountValue;
-                decimal discountPercentage = (itemDetail.promotionDiscountValue / itemDetail.amount) * 100;
-                outputItems.push({name: itemDetail.name, originalPrice: itemDetail.amount, discountPrice: discountPrice, discountPercentage: discountPercentage});
-            }
-        }
-    }
-    return outputItems;
-}
-
-isolated function checkItemsWithPrice(string cookieHeader, string userSesseionId) returns OutputItem[]|error {
-    OutputItem[] outputItems = [];
-    foreach ItemsToCheckForPrice item in itemsToCheckForPrice {
-        ItemsResponse itemsRes = check getItemDetails(userSesseionId, cookieHeader, item.name);
-        foreach ItemDetailsList itemDetail in itemsRes.result.itemDetailsList {
-            decimal actualSellingPrice = itemDetail.amount;
-            OutputItem outputItem = {name: itemDetail.name, originalPrice: itemDetail.amount};
-            if itemDetail.isPromotionApplied {
-                actualSellingPrice = itemDetail.amount - itemDetail.promotionDiscountValue;
-                outputItem.discountPrice = actualSellingPrice;
-                outputItem.discountPercentage = (itemDetail.promotionDiscountValue / itemDetail.amount) * 100;
-            }
-            if actualSellingPrice <= item.maxPrice {
-                outputItems.push(outputItem);
-            }
-        }
-    }
-    return outputItems;
-}
-
-isolated function retrieveCookieHeader(http:Cookie[] cookies) returns string {
-    string cookieHeader = "";
-    foreach http:Cookie cookie in cookies {
-        string cookieStrVal = cookie.toStringValue();
-        int? semicolonPlace = cookieStrVal.indexOf(";");
-        if semicolonPlace == () {
-            cookieHeader = cookieHeader + cookieStrVal + ";";
-        } else {
-            cookieHeader = cookieHeader + cookieStrVal.substring(0, semicolonPlace) + ";";
-        }
-    }
-    return cookieHeader;
-}
-
-isolated function getItemDetails(string userSesseionId, string cookieHeader, string item) returns ItemsResponse|error {
-    do {
-        decimal epVersion = 2.0;
-        http:Response offerResponse = check keelsEP->/[epVersion]/Web/GetItemDetails.get({"usersessionid": userSesseionId, "Cookie": cookieHeader},
-            fromCount = 0, toCount = 50, outletCode = "SCDR", itemDescription = item,
-            itemPricefrom = 0, itemPriceTo = 5000, isPromotionOnly = false, sortBy = "default"
-        );
-        if offerResponse.statusCode == 200 {
-            return check (check offerResponse.getJsonPayload()).cloneWithType(ItemsResponse);
-        }
-        return error(string `Error occured while retrieving offered items: status code ${offerResponse.statusCode}`);
-    } on fail error err {
-        return error(string `Error occured while retrieving offered items: ${err.message()}`);
-    }
-}
-
-isolated function getUserSessionId(http:Cookie[] cookies) returns string {
-    from http:Cookie cookie in cookies
-    do {
-        if cookie.name.includes("auth_cookie_") {
-            return cookie.name.substring(12);
-        }
-    };
-    return "";
-}
-
-isolated function getGuestLogin() returns http:Response|error {
-    http:Request guestLoginReq = new;
-    guestLoginReq.setPayload("");
-    decimal epVersion = 1.0;
-    http:Response|error guestLoginRes = check keelsEP->/[epVersion]/Login/GuestLogin.post(guestLoginReq);
-    if guestLoginRes is error {
-        return error(string `Error occured during guest session creation ${guestLoginRes.message()}`);
-    }
-    return guestLoginRes;
 }

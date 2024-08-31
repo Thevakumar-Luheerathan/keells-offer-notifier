@@ -27,8 +27,8 @@ type ItemsResponse record {|
 type OutputItem record {|
     string name;
     decimal originalPrice;
-    decimal discountPrice?;
-    decimal discountPercentage?;
+    decimal|string discountPrice = "--";
+    decimal|string discountPercentage = 0;
 |};
 
 type ItemsToCheckForPrice record {|

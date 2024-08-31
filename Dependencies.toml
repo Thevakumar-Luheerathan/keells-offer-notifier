@@ -293,6 +293,15 @@ modules = [
 
 [[package]]
 org = "ballerinax"
+name = "client.config"
+version = "1.0.1"
+dependencies = [
+	{org = "ballerina", name = "http"},
+	{org = "ballerina", name = "oauth2"}
+]
+
+[[package]]
+org = "ballerinax"
 name = "googleapis.gmail"
 version = "4.0.1"
 dependencies = [
@@ -313,13 +322,33 @@ modules = [
 ]
 
 [[package]]
+org = "ballerinax"
+name = "googleapis.sheets"
+version = "3.5.0"
+dependencies = [
+	{org = "ballerina", name = "http"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.array"},
+	{org = "ballerina", name = "lang.int"},
+	{org = "ballerina", name = "lang.regexp"},
+	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "os"},
+	{org = "ballerinai", name = "observe"},
+	{org = "ballerinax", name = "client.config"}
+]
+modules = [
+	{org = "ballerinax", packageName = "googleapis.sheets", moduleName = "googleapis.sheets"}
+]
+
+[[package]]
 org = "mr_comali"
 name = "keels_offer_notifier"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerinai", name = "observe"},
-	{org = "ballerinax", name = "googleapis.gmail"}
+	{org = "ballerinax", name = "googleapis.gmail"},
+	{org = "ballerinax", name = "googleapis.sheets"}
 ]
 modules = [
 	{org = "mr_comali", packageName = "keels_offer_notifier", moduleName = "keels_offer_notifier"}
